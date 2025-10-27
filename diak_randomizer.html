@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <title>Diáksorsoló eszköz</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 30px auto; background:#f4f4fc; padding: 20px; border-radius: 10px; }
+    h1 { text-align: center; }
+    textarea { width: 100%; height: 90px; margin-bottom: 10px; }
+    button { margin: 5px 2px; padding: 6px 14px; }
+    .result { background: #fff; border: 1px solid #bbb; border-radius: 6px; padding: 10px; margin: 10px 0; }
+    label { font-weight: bold; }
+    input[type=number] { width: 50px; }
+    .group-list { margin: 4px 0 10px 0; }
+    .group-list li { margin-left: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Diáksorsoló</h1>
+  <label for="students">Diákok (minden név külön sorba):</label>
+  <textarea id="students" placeholder="pl.&#10;Kovács Anna&#10;Tóth Béla&#10;Szabó Csilla"></textarea>
+  <br>
+  <button onclick="randomOrder()">Véletlen sorrend</button>
+  <button onclick="pickRandom()">Egy diák kisorsolása</button>
+  <label style="margin-left:10px;">Csoportok száma: <input type="number" id="groupCount" min="2" max="99" value="2"></label>
+  <button onclick="splitGroups()">Csoportbontás</button>
+  <div id="result" class="result"></div>
+  <script>
+    function getStudents() {
+      return document.getElementById('students').value
+        .split('\n')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+    }
+
+    function shuffle(arr) {
+      // Durstenfeld shuffle
+      for(let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i+1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function randomOrder() {
+      const students = getStudents();
+      if(students.length < 2) {
+        showResult("Adj meg legalább két diákot!");
+        return;
+      }
+      const shuffled = shuffle([...students]);
+      showResult("<b>Véletlen sorrend:</b><br><ol class='group-list'>" +
+        shuffled.map(name => `<li>${escapeHtml(name)}</li>`).join('') +
+        "</ol>");
+    }
+
+    function pickRandom() {
+      const students = getStudents();
+      if(students.length === 0) {
+        showResult("Nincs diák megadva!");
+        return;
+      }
+      const idx = Math.floor(Math.random() * students.length);
+      showResult("<b>Kisorsolt diák:</b> " + `<span style="font-size:1.2em">${escapeHtml(students[idx])}</span>`);
+    }
+
+    function splitGroups() {
+      const students = getStudents();
+      const groupCount = parseInt(document.getElementById('groupCount').value, 10);
+      if(students.length < groupCount || groupCount < 2) {
+        showResult("Adj meg legalább annyi diákot, mint a csoportok száma, és minimum 2 csoportot!");
+        return;
+      }
+      const shuffled = shuffle([...students]);
+      const groups = Array.from({length: groupCount}, () => []);
+      shuffled.forEach((student, i) => {
+        groups[i % groupCount].push(student);
+      });
+      let html = "<b>Csoportok:</b><br>";
+      for(let i=0; i<groups.length; i++) {
+        html += `<div><b>${i+1}. csoport</b><ul class='group-list'>` +
+          groups[i].map(name => `<li>${escapeHtml(name)}</li>`).join('') +
+          "</ul></div>";
+      }
+      showResult(html);
+    }
+
+    function showResult(html) {
+      document.getElementById('result').innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function (m) {
+        return ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        })[m];
+      });
+    }
+  </script>
+</body>
+</html>
